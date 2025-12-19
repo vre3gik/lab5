@@ -1,8 +1,57 @@
-#include "Unit_Operation.h"
-#include "Unit_Input_Output.h"
 #include <iostream>
+#include <clocale>
+#include <windows.h>
+#include <cwchar>
+#include <cwctype>
 
 using namespace std;
+
+struct ExportProduct {
+    wchar_t name[100];
+    wchar_t country[50];
+    int quantity;
+};
+
+struct ProductArray {
+    ExportProduct* data;
+    int size;
+    int capacity;
+};
+
+bool pustyaorprobeli(const wchar_t* str) {
+    for (int i = 0; str[i] != L'\0'; i++) {
+        if (!iswspace(str[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void delprobelsinword(wchar_t* str) {
+    int start = 0;
+    while (str[start] == L' ' || str[start] == L'\t') {
+        start++;
+    }
+    if (start > 0) {
+        int i = 0;
+        while (str[start + i] != L'\0') {
+            str[i] = str[start + i];
+            i++;
+        }
+        str[i] = L'\0';
+    }
+    int end = wcslen(str) - 1;
+    while (end >= 0 && (str[end] == L' ' || str[end] == L'\t' || str[end] == L'\n' || str[end] == L'\r')) {
+        str[end] = L'\0';
+        end--;
+    }
+}
+
+void lowercase(wchar_t* str) {
+    for (int i = 0; str[i]; i++) {
+        str[i] = towlower(str[i]);
+    }
+}
 
 void initProductArray(ProductArray* array) {
     array->data = nullptr;
@@ -90,6 +139,50 @@ int findallproductsname(const ProductArray* array, const wchar_t* productName, i
     }
     delete[] listindexfoundproduct;
     return count;
+}
+
+void inputproduct(ExportProduct* product) {
+    wcout << L"Введите наименование товара: ";
+    wcin.getline(product->name, 100);
+    while (pustyaorprobeli(product->name)) {
+        wcout << L"Название не может быть пустым. Введите еще раз: ";
+        wcin.getline(product->name, 100);
+    }
+    wcout << L"Введите страну импортера: ";
+    wcin.getline(product->country, 50);
+    while (pustyaorprobeli(product->country)) {
+        wcout << L"Страна не может быть пустой. Введите еще раз: ";
+        wcin.getline(product->country, 50);
+    }
+    wcout << L"Введите количество (в штуках): ";
+    while (true) {
+        cin >> product->quantity;
+        if (cin.fail() || product->quantity < 0) {
+            cin.clear();
+            cin.ignore(1000, '\n');
+            wcout << L"Ошибка! Введите положительное число: ";
+        } else {
+            cin.ignore(1000, '\n');
+            break;
+        }
+    }
+}
+
+void printproduct(const ExportProduct* product) {
+    wcout << L"Товар: " << product->name << L", Страна: " << product->country << L", Количество: " << product->quantity << endl;
+}
+
+void printarray(const ProductArray* array) {
+    if (array->size == 0) {
+        wcout << L"Массив пуст." << endl;
+        return;
+    }
+    wcout << L"\nСписок всех товаров:" << endl;
+    for (int i = 0; i < array->size; i++) {
+        wcout << i + 1 << L". ";
+        printproduct(&array->data[i]);
+    }
+    wcout << L"Всего товаров: " << array->size << endl;
 }
 
 void bubbleSortByCountry(ProductArray* array) {
@@ -287,4 +380,147 @@ void alloperation() {
     wcout << L"Массив после удаления:" << endl;
     printarray(&products);
     freeProductArray(&products);
+}
+
+void printmenu() {
+    wcout << L"\nМЕНЮ" << endl;
+    wcout << L"1. Создать новый массив товаров" << endl;
+    wcout << L"2. Добавить товар" << endl;
+    wcout << L"3. Просмотреть все товары" << endl;
+    wcout << L"4. Удалить товар" << endl;
+    wcout << L"5. Отсортировать по стране (метод пузырька)" << endl;
+    wcout << L"6. Найти страны для указанного товара" << endl;
+    wcout << L"7. Демонстрация всех операций" << endl;
+    wcout << L"8. Выход" << endl;
+}
+
+int main() {
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+    setlocale(LC_ALL, "Russian");
+    ProductArray products;
+    initProductArray(&products);
+    int choice;
+    do {
+        printmenu();
+        wcout << L"Выберите действие (1-8): ";
+        if (!(cin >> choice)) {
+            cin.clear();
+            cin.ignore(1000, '\n');
+            wcout << L"Введите число от 1 до 8." << endl;
+            continue;
+        }
+        cin.ignore(1000, '\n');
+        switch (choice) {
+            case 1:
+                freeProductArray(&products);
+                initProductArray(&products);
+                wcout << L"Создан новый массив товаров." << endl;
+                break;
+            case 2: {
+                ExportProduct newProduct;
+                inputproduct(&newProduct);
+                addProductToArray(&products, &newProduct);
+                wcout << L"Товар успешно добавлен." << endl;
+                break;
+            }
+            case 3:
+                if (getproductarraysize(&products) == 0) {
+                    wcout << L"Массив товаров пуст." << endl;
+                } else {
+                    printarray(&products);
+                }
+                break;
+            case 4:
+                if (getproductarraysize(&products) == 0) {
+                    wcout << L"Массив товаров и так пуст" << endl;
+                    break;
+                }
+                wcout << L"\nСпособы удаления:" << endl;
+                wcout << L"1. Удалить по номеру товара" << endl;
+                wcout << L"2. Удалить все товары с названием" << endl;
+                wcout << L"Выберите (1 или 2): ";
+                int deleteChoice;
+                if (!(cin >> deleteChoice)) {
+                    cin.clear();
+                    cin.ignore(1000, '\n');
+                    wcout << L"Ошибка ввода!" << endl;
+                    break;
+                }
+                cin.ignore(1000, '\n');
+                if (deleteChoice == 1) {
+                    wcout << L"Текущий список товаров:" << endl;
+                    printarray(&products);
+                    int index;
+                    wcout << L"Введите номер товара для удаления: ";
+                    if (!(cin >> index)) {
+                        cin.clear();
+                        cin.ignore(1000, '\n');
+                        wcout << L"Ошибка ввода!" << endl;
+                        break;
+                    }
+                    cin.ignore(1000, '\n');
+                    removeProductByIndex(&products, index);
+                } else if (deleteChoice == 2) {
+                    wchar_t productName[100];
+                    wcout << L"Введите название товара для удаления: ";
+                    wcin.getline(productName, 100);
+                    delprobelsinword(productName);
+                    if (wcslen(productName) == 0) {
+                        wcout << L"Название товара не может быть пустым." << endl;
+                        break;
+                    }
+                    removeProductsByName(&products, productName);
+                } else {
+                    wcout << L"Неверный выбор." << endl;
+                }
+                break;
+            case 5:
+                if (getproductarraysize(&products) == 0) {
+                    wcout << L"Массив товаров пуст." << endl;
+                } else {
+                    bubbleSortByCountry(&products);
+                    wcout << L"Массив отсортирован по стране." << endl;
+                }
+                break;
+            case 6:
+                if (getproductarraysize(&products) == 0) {
+                    wcout << L"Массив товаров пуст." << endl;
+                    break;
+                }
+                {
+                    wchar_t productName[100];
+                    wcout << L"Введите наименование товара: ";
+                    wcin.getline(productName, 100);
+                    delprobelsinword(productName);
+                    if (wcslen(productName) == 0) {
+                        wcout << L"Название товара не может быть пустым." << endl;
+                        break;
+                    }
+                    wchar_t** countries = nullptr;
+                    int countriesCount = 0;
+                    findcountriesforproduct(&products, productName, &countries, &countriesCount);
+                    if (countriesCount == 0) {
+                        wcout << L"Товар '" << productName << L"' не найден." << endl;
+                    } else {
+                        wcout << L"\nСтраны, импортирующие товар '" << productName << L"':" << endl;
+                        for (int i = 0; i < countriesCount; i++) {
+                            wcout << i + 1 << L". " << countries[i] << endl;
+                        }
+                        deleteCountriesArray(countries, countriesCount);
+                    }
+                }
+                break;
+            case 7:
+                alloperation();
+                break;
+            case 8:
+                freeProductArray(&products);
+                wcout << L"В С Ё" << endl;
+                break;
+            default:
+                wcout << L"Выберите от 1 до 8." << endl;
+        }
+    } while (choice != 8);
+    return 0;
 }

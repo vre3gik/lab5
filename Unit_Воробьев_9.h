@@ -4,15 +4,15 @@
 #include <cwchar>
 
 struct ExportProduct {
-    wchar_t name[100];    
-    wchar_t country[50];  
-    int quantity;         
+    wchar_t name[100];
+    wchar_t country[50];
+    int quantity;
 };
 
 struct ProductArray {
-    ExportProduct* data; 
-    int size;             
-    int capacity;         
+    ExportProduct* data;
+    int size;
+    int capacity;
 };
 
 #endif
